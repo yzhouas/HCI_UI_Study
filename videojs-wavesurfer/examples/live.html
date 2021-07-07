@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Microphone Example - Wavesurfer Plugin for Video.js</title>
+
+  <link href="../node_modules/video.js/dist/video-js.min.css" rel="stylesheet">
+  <link href="../dist/css/videojs.wavesurfer.css" rel="stylesheet">
+
+  <script src="../node_modules/video.js/dist/video.min.js"></script>
+  <script src="../node_modules/webrtc-adapter/out/adapter.js"></script>
+  <script src="../node_modules/wavesurfer.js/dist/wavesurfer.min.js"></script>
+  <script src="../node_modules/wavesurfer.js/dist/plugin/wavesurfer.microphone.min.js"></script>
+
+  <script src="../dist/videojs.wavesurfer.js"></script>
+
+  <script src="safari-workaround.js"></script>
+
+  <style>
+  /* change player background color */
+  #myLiveAudio {
+      background-color: #ADD3FF;
+  }
+
+  /* position fullscreen control on right side of the player */
+  .video-js.vjs-wavesurfer .vjs-control.vjs-fullscreen-control {
+      position: absolute;
+      right: 0;
+  }
+  </style>
+</head>
+<body>
+
+<audio id="myLiveAudio" class="video-js vjs-default-skin"></audio>
+
+<script>
+/* eslint-disable */
+let player;
+let options = {
+    controls: true,
+    autoplay: false,
+    loop: false,
+    muted: false,
+    fluid: false,
+    width: 600,
+    height: 300,
+    bigPlayButton: false,
+    controlBar: {
+        currentTimeDisplay: false,
+        timeDivider: false,
+        durationDisplay: false,
+        remainingTimeDisplay: false,
+        volumePanel: false,
+        progressControl: false
+    },
+    plugins: {
+        // enable videojs-wavesurfer plugin
+        wavesurfer: {
+            backend: 'WebAudio',
+            waveColor: 'black',
+            debug: true,
+            cursorWidth: 0,
+            interact: false,
+            hideScrollbar: true,
+            plugins: [
+                // enable microphone plugin
+                WaveSurfer.microphone.create({
+                    bufferSize: 4096,
+                    numberOfInputChannels: 1,
+                    numberOfOutputChannels: 1,
+                    constraints: {
+                        video: false,
+                        audio: true
+                    }
+                })
+            ]
+        }
+    }
+};
+
+if (isSafari) {
+    // add start button for safari
+    addStartButton();
+} else {
+    // other browsers
+    createPlayer();
+}
+
+function createPlayer(event) {
+    if (isSafari) {
+        if (event) {
+            // hide button on safari
+            event.target.style.display = 'none';
+        }
+        updateContext(options);
+    }
+
+    // create player
+    player = videojs('myLiveAudio', options, function() {
+        // print version information at startup
+        const msg = 'Using video.js ' + videojs.VERSION +
+            ' with videojs-wavesurfer ' +
+            videojs.getPluginVersion('wavesurfer') +
+            ' and wavesurfer.js ' + WaveSurfer.VERSION;
+        videojs.log(msg);
+    });
+
+    // error handling
+    player.on('error', function(element, error) {
+        console.warn('ERROR:', error);
+    });
+}
+</script>
+
+</body>
+</html>

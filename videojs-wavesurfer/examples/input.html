@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Audio Input Example - Wavesurfer Plugin for Video.js</title>
+
+  <link href="../node_modules/video.js/dist/video-js.min.css" rel="stylesheet">
+  <link href="../dist/css/videojs.wavesurfer.css" rel="stylesheet">
+
+  <script src="../node_modules/video.js/dist/video.min.js"></script>
+  <script src="../node_modules/webrtc-adapter/out/adapter.js"></script>
+  <script src="../node_modules/wavesurfer.js/dist/wavesurfer.min.js"></script>
+  <script src="../node_modules/wavesurfer.js/dist/plugin/wavesurfer.microphone.min.js"></script>
+
+  <script src="../dist/videojs.wavesurfer.js"></script>
+
+  <style>
+  body {
+      font-weight: 300;
+  }
+
+  /* change player background color */
+  #myAudio {
+      background-color: #F2E68A;
+  }
+
+  select {
+      margin: 0 0 0.5em 0;
+  }
+
+  .inputSelector {
+      margin-top: 30px;
+  }
+
+  /* position fullscreen control on right side of the player */
+  .video-js.vjs-wavesurfer .vjs-control.vjs-fullscreen-control {
+      position: absolute;
+      right: 0;
+  }
+  </style>
+
+</head>
+<body>
+
+<div id="main">
+  <audio id="myAudio" class="video-js vjs-default-skin"></audio>
+
+  <div class="inputSelector">
+    <label>Select audio input: </label>
+    <select id="selector">
+      <option value="" disabled selected hidden>Please choose...</option>
+    </select>
+  </div>
+</div>
+
+<script>
+/* eslint-disable */
+var player, inputSelector;
+var devices = [];
+// fetch input/output devices
+if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+    throw new Error('enumerateDevices not supported in this browser.');
+}
+navigator.mediaDevices.enumerateDevices(this).then(function(result) {
+    devices = result;
+
+    // handle selection changes
+    inputSelector = document.getElementById('selector');
+    inputSelector.addEventListener('change', changeAudioInput);
+
+    // populate select options
+    var deviceInfo, option, i, label;
+    for (i = 0; i < devices.length; i++) {
+        deviceInfo = devices[i];
+        option = document.createElement('option');
+        option.value = deviceInfo.deviceId;
+
+        if (deviceInfo.kind === 'audioinput') {
+            label = deviceInfo.label || 'input device ' +
+                (inputSelector.length + 1);
+            console.info('Found audio input device: ', label);
+            option.text = label;
+            inputSelector.appendChild(option);
+        }
+    }
+
+    if (inputSelector.length <= 1) {
+        // no input devices found, disable select
+        option = document.createElement('option');
+        option.text = 'No additional audio input devices found';
+        option.value = '';
+        inputSelector.options[0] = null;
+        inputSelector.appendChild(option);
+        inputSelector.disabled = true;
+        console.warn(option.text);
+    } else {
+        console.log('Total input devices found:', inputSelector.length - 1);
+    }
+}).catch(function(err) {
+    console.error(err);
+});
+
+var deviceId, constraints;
+var destroyed = false;
+function changeAudioInput(event) {
+    deviceId = event.target.value;
+    console.info('using deviceId: ' + deviceId);
+
+    // hide input select
+    event.target.parentElement.style.visibility = 'hidden';
+
+    // set audio device
+    constraints = {
+        audio: {
+          deviceId: {exact: deviceId}
+        }
+    };
+
+    // instantiate player
+    player = videojs('myAudio', {
+        controls: true,
+        autoplay: false,
+        loop: false,
+        muted: false,
+        fluid: false,
+        width: 600,
+        height: 300,
+        bigPlayButton: false,
+        controlBar: {
+            currentTimeDisplay: false,
+            timeDivider: false,
+            durationDisplay: false,
+            remainingTimeDisplay: false,
+            volumePanel: false,
+            progressControl: false
+        },
+        plugins: {
+            wavesurfer: {
+                backend: 'WebAudio',
+                debug: true,
+                waveColor: '#3F4D4B',
+                progressColor: 'black',
+                cursorWidth: 0,
+                interact: false,
+                hideScrollbar: true,
+                plugins: [
+                    // enable microphone plugin (for wavesurfer.js)
+                    WaveSurfer.microphone.create({
+                        bufferSize: 4096,
+                        numberOfInputChannels: 1,
+                        numberOfOutputChannels: 1,
+                        constraints: constraints
+                    })
+                ]
+            }
+        }
+    }, function() {
+        // print version information at startup
+        var msg = 'Using video.js '+ videojs.VERSION +
+            ' with videojs-wavesurfer ' + videojs.getPluginVersion('wavesurfer') +
+            ' and wavesurfer.js ' + WaveSurfer.VERSION;
+        videojs.log(msg);
+    });
+
+    player.on('waveReady', function(event) {
+        console.log('waveform: ready!');
+    });
+
+    player.on('playbackFinish', function(event) {
+        console.log('playback finished.');
+    });
+
+    // error handling
+    player.on('error', function(element, error) {
+        console.warn('ERROR:', error);
+    });
+};
+</script>
+
+</body>
+</html>

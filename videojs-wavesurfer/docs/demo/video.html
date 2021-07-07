@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Wavesurfer Plugin Video Example</title>
+
+  <link href="//unpkg.com/video.js@7.12.3/dist/video-js.min.css" rel="stylesheet">
+  <link href="//unpkg.com/videojs-wavesurfer/dist/css/videojs.wavesurfer.min.css" rel="stylesheet">
+
+  <script src="//unpkg.com/video.js@7.12.3/dist/video.min.js"></script>
+  <script src="//unpkg.com/wavesurfer.js"></script>
+
+  <script src="//unpkg.com/videojs-wavesurfer/dist/videojs.wavesurfer.min.js"></script>
+
+  <style>
+  /* change player background color */
+  #myVideo {
+      background-color: #6699FF;
+  }
+
+  #waveform {
+      margin-top: 10px;
+      border-color: #333838;
+      border-width: 2px;
+      border-style: solid;
+      background-color: #daf1f2;
+  }
+  </style>
+</head>
+<body>
+
+<video id="myVideo" playsinline class="video-js vjs-default-skin"></video>
+
+<div id="waveform"></div>
+
+<script>
+const options = {
+    controls: true,
+    autoplay: false,
+    loop: false,
+    width: 600,
+    height: 300,
+    inactivityTimeout: 0,
+    bigPlayButton: false,
+    plugins: {
+        wavesurfer: {
+            backend: 'MediaElement',
+            displayMilliseconds: false,
+            debug: true,
+            waveColor: '#336699',
+            progressColor: 'black',
+            cursorColor: 'black',
+            hideScrollbar: true,
+            // put waveform in separate container
+            container: '#waveform'
+        }
+    }
+};
+
+// create player
+let player = videojs('myVideo', options, function() {
+    // print version information at startup
+    const msg = 'Using video.js ' + videojs.VERSION +
+        ' with videojs-wavesurfer ' +
+        videojs.getPluginVersion('wavesurfer') +
+        ' and wavesurfer.js ' + WaveSurfer.VERSION;
+    videojs.log(msg);
+
+    // load file
+    player.src({src: 'media/example.mp4', type: 'video/mp4'});
+});
+
+player.on('waveReady', function(event) {
+    console.log('waveform: ready!');
+});
+
+player.on('playbackFinish', function(event) {
+    console.log('playback finished.');
+});
+
+// error handling
+player.on('error', function(element, error) {
+    console.warn('ERROR:', error);
+});
+</script>
+
+</body>
+</html>
